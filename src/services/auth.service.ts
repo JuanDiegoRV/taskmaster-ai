@@ -34,6 +34,16 @@ function getAuthClient(): AuthClient {
   return getSupabaseClient() as unknown as AuthClient
 }
 
+function getAuthErrorMessage(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string' && message.trim()) {
+      return `No se pudo iniciar sesión: ${message}`
+    }
+  }
+  return 'No se pudo iniciar sesión. Revisa el correo, la contraseña y la configuración de Auth.'
+}
+
 export async function getCurrentSession(client: AuthClient = getAuthClient()): Promise<Session | null> {
   const { data, error } = await client.auth.getSession()
   if (error) {
@@ -48,7 +58,7 @@ export async function signIn(
 ): Promise<User> {
   const { data, error } = await client.auth.signInWithPassword(credentials)
   if (error) {
-    throw new AuthServiceError('No se pudo iniciar sesión.', error)
+    throw new AuthServiceError(getAuthErrorMessage(error), error)
   }
   if (!data.user) {
     throw new AuthServiceError('Supabase no devolvió un usuario autenticado.')
